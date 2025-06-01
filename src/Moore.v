@@ -1,86 +1,94 @@
 `timescale 1ns / 1ps
 
-module Moore(input CLK, reset, H, DC, C,
-             output AAH, AADC, AAC);
+module Moore(
+    input CLK,
+    input reset,
+    input H,
+    input DC,
+    input C,
+    output AAH,
+    output AADC,
+    output AAC
+);
 
-reg [2:0] est, ns;  // est=estado, ns=siguiente estado
-reg aah, aadc, aac;
+    // Definición de estados como parámetros
+    localparam s0 = 3'd0;
+    localparam s1 = 3'd1;
+    localparam s2 = 3'd2;
+    localparam s3 = 3'd3;
+    localparam s4 = 3'd4;
+    localparam s5 = 3'd5;
+    localparam s6 = 3'd6;
+    localparam s7 = 3'd7;
 
-// Registro de estado
-always @ (posedge CLK or posedge reset)
-begin
-    if (reset) 
-        est <= 3'b000; // s0
-    else 
-        est <= ns;
-end
+    reg [2:0] est, ns;
 
-// Lógica de siguiente estado
-always @ *
-begin
-    case(est)
-        3'b000: if (H) ns = 3'b001;
-                else if (DC) ns = 3'b010;
-                else if (C) ns = 3'b011;
-                else ns = 3'b000;
+    reg aah, aadc, aac;
 
-        3'b001: if (~H) ns = 3'b000;
-                else if (H && DC) ns = 3'b100;
-                else if (H && C) ns = 3'b101;
-                else ns = 3'b001;
+    // Registro de estado
+    always @ (posedge CLK or posedge reset) begin
+        if (reset)
+            est <= s0;
+        else
+            est <= ns;
+    end
 
-        3'b010: if (~DC) ns = 3'b000;
-                else if (H && DC) ns = 3'b100;
-                else if (DC && C) ns = 3'b110;
-                else ns = 3'b010;
+    // Lógica de siguiente estado
+    always @(*) begin
+        case (est)
+            s0: if (H) ns = s1;
+                else if (DC) ns = s2;
+                else if (C) ns = s3;
+                else ns = s0;
+            s1: if (!H) ns = s0;
+                else if (H && DC) ns = s4;
+                else if (H && C) ns = s5;
+                else ns = s1;
+            s2: if (!DC) ns = s0;
+                else if (H && DC) ns = s4;
+                else if (DC && C) ns = s6;
+                else ns = s2;
+            s3: if (!C) ns = s0;
+                else if (H && C) ns = s5;
+                else if (DC && C) ns = s6;
+                else ns = s3;
+            s4: if (!DC) ns = s1;
+                else if (!H) ns = s2;
+                else if (H && DC && C) ns = s7;
+                else ns = s4;
+            s5: if (!C) ns = s1;
+                else if (!H) ns = s3;
+                else if (H && DC && C) ns = s7;
+                else ns = s5;
+            s6: if (!DC) ns = s3;
+                else if (!C) ns = s2;
+                else if (H && DC && C) ns = s7;
+                else ns = s6;
+            s7: if (!H) ns = s6;
+                else if (!DC) ns = s5;
+                else if (!C) ns = s4;
+                else ns = s7;
+            default: ns = s0;
+        endcase
+    end
 
-        3'b011: if (~C) ns = 3'b000;
-                else if (H && C) ns = 3'b101;
-                else if (DC && C) ns = 3'b110;
-                else ns = 3'b011;
+    // Lógica de salida tipo Moore
+    always @(*) begin
+        case (est)
+            s0: begin aah = 0; aadc = 0; aac = 0; end
+            s1: begin aah = 1; aadc = 0; aac = 0; end
+            s2: begin aah = 0; aadc = 1; aac = 0; end
+            s3: begin aah = 0; aadc = 0; aac = 1; end
+            s4: begin aah = 1; aadc = 1; aac = 0; end
+            s5: begin aah = 1; aadc = 0; aac = 1; end
+            s6: begin aah = 0; aadc = 1; aac = 1; end
+            s7: begin aah = 1; aadc = 1; aac = 1; end
+            default: begin aah = 0; aadc = 0; aac = 0; end
+        endcase
+    end
 
-        3'b100: if (~DC) ns = 3'b001;
-                else if (~H) ns = 3'b010;
-                else if (H && DC && C) ns = 3'b111;
-                else ns = 3'b100;
-
-        3'b101: if (~C) ns = 3'b001;
-                else if (~H) ns = 3'b011;
-                else if (H && DC && C) ns = 3'b111;
-                else ns = 3'b101;
-
-        3'b110: if (~DC) ns = 3'b011;
-                else if (~C) ns = 3'b010;
-                else if (H && DC && C) ns = 3'b111;
-                else ns = 3'b110;
-
-        3'b111: if (~H) ns = 3'b110;
-                else if (~DC) ns = 3'b101;
-                else if (~C) ns = 3'b100;
-                else ns = 3'b111;
-
-        default: ns = 3'b000;
-    endcase
-end
-
-// Lógica de salida pre-estado
-always @ *
-begin
-    case(est)
-        3'b000: {aah, aadc, aac} = 3'b000;
-        3'b001: {aah, aadc, aac} = 3'b100;
-        3'b010: {aah, aadc, aac} = 3'b010;
-        3'b011: {aah, aadc, aac} = 3'b001;
-        3'b100: {aah, aadc, aac} = 3'b110;
-        3'b101: {aah, aadc, aac} = 3'b101;
-        3'b110: {aah, aadc, aac} = 3'b011;
-        3'b111: {aah, aadc, aac} = 3'b111;
-    endcase
-end
-
-// Asignaciones de salida
-assign AAH = aah;
-assign AADC = aadc;
-assign AAC = aac;
+    assign AAH = aah;
+    assign AADC = aadc;
+    assign AAC = aac;
 
 endmodule
