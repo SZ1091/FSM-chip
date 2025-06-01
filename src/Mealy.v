@@ -1,49 +1,51 @@
 `timescale 1ns / 1ps
 
-module Mealy(input CLK, reset, A,
-             output L);
+module Mealy(
+    input CLK,
+    input reset,
+    input A,
+    output L
+);
 
-reg est, ns;  // est=estado, ns=siguiente estado
-reg l;
-reg C = 0; // Contador
+    // Estados codificados
+    localparam s0 = 1'b0;
+    localparam s1 = 1'b1;
 
-// Registro de estado
-always @ (posedge CLK or posedge reset)
-begin
-    if (reset) 
-    begin 
-        est <= 1'b0; // s0
-        C <= 1'b0;
+    reg est, ns;
+    reg l;
+    reg C = 0; // Contador interno
+
+    // Registro de estado
+    always @(posedge CLK or posedge reset) begin
+        if (reset) begin
+            est <= s0;
+            C <= 0;
+        end else begin
+            est <= ns;
+            C <= ~C;
+        end
     end
-    else 
-    begin 
-        est <= ns;
-        C <= ~C;
+
+    // Lógica de siguiente estado
+    always @(*) begin
+        case (est)
+            s0: if (A && C) ns = s1;
+                else ns = s0;
+            s1: if (A && C) ns = s0;
+                else ns = s0;
+            default: ns = s0;
+        endcase
     end
-end
 
-// Lógica de siguiente estado
-always @ *
-begin
-    case (est)
-        1'b0: if (A && C) ns = 1'b1;
-        1'b1: if (A && C) ns = 1'b0;
-              else ns = 1'b0;
-        default: ns = 1'b0;
-    endcase
-end
+    // Lógica de salida (tipo Mealy)
+    always @(*) begin
+        case (est)
+            s0: l = 0;
+            s1: l = 1;
+            default: l = 0;
+        endcase
+    end
 
-// Lógica de salida pre-estado
-always @ *
-begin
-    case (est)
-        1'b0: l = 1'b0;
-        1'b1: l = 1'b1;
-        default: l = 1'b0;
-    endcase
-end
-
-// Asignación de salida
-assign L = l;
+    assign L = l;
 
 endmodule
