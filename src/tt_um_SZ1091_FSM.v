@@ -1,20 +1,24 @@
 `timescale 1ns / 1ps
 
 module tt_um_SZ1091_FSM (
-    input wire [7:0] ui_in,  // Entradas
-    output wire [7:0] uo_out, // Salidas
-    inout wire [7:0] uio_inout, // Pines bidireccionales (no usados)
-    input wire clk,   // Reloj global
-    input wire rst_n, // Reset global activo bajo
-    input wire ena    // Señal de habilitación
+    input wire [7:0] ui_in,
+    output wire [7:0] uo_out,
+    inout wire [7:0] uio_inout,
+    input wire clk,
+    input wire rst_n,
+    input wire ena
 );
 
-wire btnC = ui_in[3];   // Reset
-wire [2:0] sw = ui_in[2:0]; // Señales de entrada
-wire reloj;
-wire [2:0] led; // Salidas
+// Entradas del usuario
+wire btnC = ui_in[3];
+wire [2:0] sw = ui_in[2:0];
+wire [2:0] led;
 
-// Instanciación del módulo FSM
+// Señales no usadas (explícitamente ignoradas para claridad)
+wire _unused_rst_n = rst_n;
+wire _unused_ena   = ena;
+
+// Instancia del módulo FSM
 FSM fsm_inst (
     .clk(clk), 
     .btnC(btnC), 
@@ -22,9 +26,9 @@ FSM fsm_inst (
     .led(led)
 );
 
-// Conexión de las salidas
+// Salidas
 assign uo_out[2:0] = led;
-assign uo_out[7:3] = 5'b00000; // No usados
-assign uio_inout = 8'bZZZZZZZZ; // Pines bidireccionales no utilizados
+assign uo_out[7:3] = 5'b0;
+assign uio_inout = 8'bZ;
 
 endmodule
