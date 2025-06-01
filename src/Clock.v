@@ -11,6 +11,6 @@ module Clock (
         myreg <= myreg + 1;
     end
 
-    assign reloj = myreg[27];
+    assign reloj = myreg[20];
 
 endmodule
