@@ -2,50 +2,41 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import cocotb
-from cocotb.clock import Clock
-from cocotb.triggers import ClockCycles, RisingEdge
-
+from cocotb.triggers import Timer
+import random
 
 @cocotb.test()
 async def test_fsm_alarma(dut):
-    dut._log.info("Inicio del test")
+    """Test para verificar que el LED 0 se activa con sw[0] = 1 (H = 1)."""
 
-    # Configurar el reloj a 10us (100kHz)
-    clock = Clock(dut.clk, 10, units="us")
-    cocotb.start_soon(clock.start())
+    cocotb.log.info("Inicio del test")
 
-    # Inicializar señales
-    dut.ena.value = 1
-    dut.ui_in.value = 0b00000000
-    dut.uio_in.value = 0
-    dut.rst_n.value = 0
+    # Asegurar reset activo inicialmente
+    dut.btnC.value = 1
+    dut.sw.value = 0  # Todos los switches en 0
+    await Timer(10, units="us")
 
-    await ClockCycles(dut.clk, 5)
+    # Liberar el reset
+    dut.btnC.value = 0
+    await Timer(10, units="us")
 
-    # Quitar reset
-    dut.rst_n.value = 1
-    await ClockCycles(dut.clk, 2)
+    # Activar sw[0] = 1 (H = 1), mantener durante 100us
+    dut.sw.value = 0b001
+    await Timer(100, units="us")
 
-    # Aplicar reset interno (btnC = 1)
-    dut.ui_in.value = 0b00001000  # btnC=1, sw=000
-    await ClockCycles(dut.clk, 2)
+    # Luego desactivar H
+    dut.sw.value = 0b000
+    await Timer(50, units="us")
 
-    # Quitar btnC
-    dut.ui_in.value = 0b00000000
-    await ClockCycles(dut.clk, 2)
+    # Leer la salida de los LEDs durante múltiples ciclos
+    led_state = []
+    for _ in range(100):
+        led_state.append(int(dut.led.value))
+        await Timer(2, units="us")
 
-    # Activar entrada del primer detector: sw[0] = 1
-    dut.ui_in.value = 0b00000001
-    await ClockCycles(dut.clk, 10)
+    cocotb.log.info(f"LED states: {led_state}")
 
-    # Verificar que el LED 0 (uo_out[0]) se activó al menos una vez
-    led_state = [int(dut.uo_out.value) & 0b00000111 for _ in range(10)]
-    for _ in range(10):
-        await ClockCycles(dut.clk, 1)
-        led_state.append(int(dut.uo_out.value) & 0b00000111)
-
-    dut._log.info(f"LED states: {led_state}")
-
+    # Verificar que led[0] (bit 0) estuvo activo al menos una vez
     assert any((s & 0b001) for s in led_state), "El LED 0 nunca se activó con sw[0] = 1"
 
     # Keep testing the module by changing the input values, waiting for
