@@ -7,13 +7,10 @@ from cocotb.triggers import Timer
 
 @cocotb.test()
 async def test_fsm_wrapper_passthrough(dut):
-    """Test mínimo para que el wrapper pase simulación y GDS"""
-    dut._log.info("Inicio del test minimalista del wrapper")
 
     # Arranca el clock de 10ns
     cocotb.start_soon(Clock(dut.clk, 10, units="ns").start())
 
-    # Inicializa señales para evitar 'x'
     dut.ui_in.value = 0
     dut.uio_in.value = 0
     dut.rst_n.value = 1
