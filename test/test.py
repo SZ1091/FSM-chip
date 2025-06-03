@@ -8,7 +8,7 @@ from cocotb.triggers import Timer
 @cocotb.test()
 async def test_fsm_wrapper_passthrough(dut):
 
-    # Arranca el clock de 10ns
+    
     cocotb.start_soon(Clock(dut.clk, 10, units="ns").start())
 
     dut.ui_in.value = 0
@@ -16,11 +16,11 @@ async def test_fsm_wrapper_passthrough(dut):
     dut.rst_n.value = 1
     dut.ena.value = 1
 
-    # Espera unos ciclos
+    
     for _ in range(5):
         await Timer(20, units="ns")
 
-    # Simula un pulso en ui_in[3] (btnC)
+    
     dut.ui_in.value = dut.ui_in.value | (1 << 3)
 
     await Timer(20, units="ns")
